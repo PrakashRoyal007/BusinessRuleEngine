@@ -1,4 +1,5 @@
 ﻿using BusinessRuleEngine.Models;
+using BusinessRuleEngine.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -10,49 +11,87 @@ namespace BusinessRuleEngine.Controllers
 {
     public class BusinessRuleEngineController
     {
-        public string BusinessOrders(OrderdetailsModel input)
+        /// <summary>
+        /// This controller is to handle all orders
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public OrderResponse BusinessOrders(OrderdetailsModel input)
         {
-            string response = string.Empty;
-            if(input.orderType.ToLower()=="physical product" || input.orderType.ToLower() == "book")
-            {
-                if (input.orderType.ToLower() == "physical product")
+            OrderResponse response = new OrderResponse();
+            try
+            {            
+                if (input.orderType.ToLower() == "physical product" || input.orderType.ToLower() == "book")
                 {
-                    response = "Your order has been packed and will deliver soon with our delivery agents";
+                    if (input.orderType.ToLower() == "physical product")
+                    {
+                        response.isOrderPacked = true;//here we will send packing slip for customer
+                        response.messageType = "success";
+                    }
+                    else
+                    {
+                        response.isDuplicatePackageSlipForRoyalty = true;//heer we will create duplicate packing slip for royalty department
+                        response.messageType = "success";
+                    }
+                    //code to generate comission to the agent
+                }
+                else if (input.orderType.ToLower() == "membership" || input.orderType.ToLower() == "upgrade membership")
+                {
+
+                    if (input.orderType.ToLower() == "membership")
+                    {
+                        response.isMembershipAdded = AddMembership(input.username);
+                        response.messageType = "success";
+                    }
+                    else
+                    {
+                        response.isMembershipUpgraded = UpgradeMembership(input.username, input.membershipId);
+                        response.messageType = "success";
+                    }
+                    //code to sent an email to the user
+                }
+                else if (input.orderType.ToLower() == "video")
+                {
+                    //code to add "First Aid" video to packing slip
+                    response.messageType = "success";
                 }
                 else
                 {
-                    response = "created duplicate packing slip for royalty department";
+                    response.messageType = "failure";
+                    response.message = "Something went wrong please check your order";
                 }
-
-            }
-            else if(input.orderType.ToLower() == "membership" || input.orderType.ToLower() == "upgrade membership")
+            }catch(Exception ex)
             {
-
-                if (input.orderType.ToLower() == "membership")
-                {
-                    response = AddMembership(input.username);
-                }
-                else
-                {
-                    response = UpgradeMembership(input.username, input.membershipId);
-                }
+                response.messageType = "failure";
+                response.message =string.Format(ex.Message);
             }
             return response;
         }
-        public string AddMembership(string username)
+        /// <summary>
+        /// To add new membership to the user
+        /// </summary>
+        /// <param name="username"></param>
+        /// <returns></returns>
+        public Boolean AddMembership(string username)
         {
             //will update the given userid in our DB
-            string result = string.Empty;
+          
             string query = string.Format("update table set isMembership={0} where user={1}", true, username);//i have given sample here but different query for entity framework
 
-            return result ="Added membership successfully to the given userid";
+            return  true;
         }
-        public string UpgradeMembership(string username, int membershipid)
+        /// <summary>
+        /// To upgrade customer membership
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="membershipid"></param>
+        /// <returns></returns>
+        public Boolean UpgradeMembership(string username, int membershipid)
         {
             //will update the given userid in our DB
-            string result = string.Empty;
+          
             string query = string.Format("update table set isMembershipupgrade={0} where user={1} and membershipid={2}", true,username, membershipid);
-            return result = "Membership upgraded successfully to the given userid";
+            return true;
         }
     }
 }
